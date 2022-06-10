@@ -1,16 +1,47 @@
 locals {
-  name          = "my-module"
-  bin_dir       = module.setup_clis.bin_dir
-  yaml_dir      = "${path.cwd}/.tmp/${local.name}/chart/${local.name}"
-  service_url   = "http://${local.name}.${var.namespace}"
-  values_content = {
-  }
-  layer = "services"
-  type  = "base"
+  name          = "ibm-masapp-kafka"
+  operator_name  = "ibm-masapp-kafka-operator"
+  bin_dir        = module.setup_clis.bin_dir
+  tmp_dir        = "${path.cwd}/.tmp/${local.name}"
+  yaml_dir       = "${local.tmp_dir}/chart/${local.name}"
+  operator_yaml_dir = "${local.tmp_dir}/chart/${local.operator_name}"
+
+  layer              = "services"
+  type               = "instances"
+  operator_type      = "operators"
   application_branch = "main"
-  namespace = var.namespace
-  layer_config = var.gitops_config[local.layer]
+  core-namespace     = "mas-${var.instanceid}-core"
+  namespace          = var.namespace
+  appname            = var.appname
+  layer_config       = var.gitops_config[local.layer]
+  installPlan        = var.installPlan
+
+# set values content for subscription
+  values_content = {
+        kafka = {
+          name = var.cluster_name
+          username = var.user_name
+          namespace = local.namespace
+          size = var.kafka_size
+        }
+        masapp = {
+          instanceid = var.instanceid
+          core-namespace = local.core-namespace
+        }
+    }
+  values_content_operator = {
+        subscription = {
+          name = local.appname
+          channel = var.channel
+          installPlanApproval = local.installPlan
+          source = var.catalog
+          sourceNamespace = var.catalog_namespace
+        }
+    }
+
+
 }
+
 
 module setup_clis {
   source = "github.com/cloud-native-toolkit/terraform-util-clis.git"
@@ -26,37 +57,62 @@ resource null_resource create_yaml {
   }
 }
 
-resource null_resource setup_gitops {
-  depends_on = [null_resource.create_yaml]
+# Add values for operator chart
+resource "null_resource" "deployAppValsOperator" {
+
+  provisioner "local-exec" {
+    command = "${path.module}/scripts/create-yaml.sh '${local.operator_name}' '${local.operator_yaml_dir}'"
+
+    environment = {
+      VALUES_CONTENT = yamlencode(local.values_content_operator)
+    }
+  }
+}
+
+
+# Add values for instance charts
+resource "null_resource" "deployAppVals" {
 
   triggers = {
-    name = local.name
-    namespace = var.namespace
-    yaml_dir = local.yaml_dir
-    server_name = var.server_name
-    layer = local.layer
-    type = local.type
-    git_credentials = yamlencode(var.git_credentials)
-    gitops_config   = yamlencode(var.gitops_config)
-    bin_dir = local.bin_dir
+    addons = join(",", var.addons)
   }
 
   provisioner "local-exec" {
-    command = "${self.triggers.bin_dir}/igc gitops-module '${self.triggers.name}' -n '${self.triggers.namespace}' --contentDir '${self.triggers.yaml_dir}' --serverName '${self.triggers.server_name}' -l '${self.triggers.layer}' --type '${self.triggers.type}'"
+    command = "${path.module}/scripts/create-yaml.sh '${local.name}' '${local.yaml_dir}'"
 
     environment = {
-      GIT_CREDENTIALS = nonsensitive(self.triggers.git_credentials)
-      GITOPS_CONFIG   = self.triggers.gitops_config
+      VALUES_CONTENT = yamlencode(local.values_content)
     }
   }
+}
 
-  provisioner "local-exec" {
-    when = destroy
-    command = "${self.triggers.bin_dir}/igc gitops-module '${self.triggers.name}' -n '${self.triggers.namespace}' --delete --contentDir '${self.triggers.yaml_dir}' --serverName '${self.triggers.server_name}' -l '${self.triggers.layer}' --type '${self.triggers.type}'"
 
-    environment = {
-      GIT_CREDENTIALS = nonsensitive(self.triggers.git_credentials)
-      GITOPS_CONFIG   = self.triggers.gitops_config
-    }
-  }
+# Deploy Operator
+resource gitops_module masapp_operator {
+  depends_on = [null_resource.deployAppValsOperator]
+
+  name        = local.operator_name
+  namespace   = local.namespace
+  content_dir = local.operator_yaml_dir
+  server_name = var.server_name
+  layer       = local.layer
+  type        = local.operator_type
+  branch      = local.application_branch
+  config      = yamlencode(var.gitops_config)
+  credentials = yamlencode(var.git_credentials)
+}
+
+# Deploy Instance
+resource gitops_module masapp {
+  depends_on = [gitops_module.masapp_operator]
+
+  name        = local.name
+  namespace   = local.namespace
+  content_dir = local.yaml_dir
+  server_name = var.server_name
+  layer       = local.layer
+  type        = local.type
+  branch      = local.application_branch
+  config      = yamlencode(var.gitops_config)
+  credentials = yamlencode(var.git_credentials)
 }

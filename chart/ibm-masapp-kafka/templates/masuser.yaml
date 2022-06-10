@@ -1,0 +1,39 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaUser
+metadata:
+  name: {{ .Values.kafka.username | quote }}
+  labels:
+    strimzi.io/cluster: {{ .Values.kafka.name | quote }}
+    {{- include "ibm-masapp-kafka.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2" 
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - host: '*'
+        operation: All
+        resource:
+          name: '*'
+          patternType: prefix
+          type: topic
+      - host: '*'
+        operation: All
+        resource:
+          name: '*'
+          patternType: prefix
+          type: group
+      - host: '*'
+        operation: All
+        resource:
+          name: '*'
+          patternType: literal
+          type: topic
+      - host: '*'
+        operation: All
+        resource:
+          name: '*'
+          patternType: literal
+          type: group

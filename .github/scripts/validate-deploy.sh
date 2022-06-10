@@ -50,5 +50,8 @@ check_k8s_namespace "${NAMESPACE}"
 
 #check_k8s_resource "${NAMESPACE}" "deployment" "${COMPONENT_NAME}"
 
+#pause - for initial deploy during dev - remove this upon completion
+sleep 15m
+
 cd ..
 rm -rf .testrepo

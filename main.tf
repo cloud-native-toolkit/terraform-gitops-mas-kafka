@@ -73,10 +73,6 @@ resource "null_resource" "deployAppValsOperator" {
 # Add values for instance charts
 resource "null_resource" "deployAppVals" {
 
-  triggers = {
-    addons = join(",", var.addons)
-  }
-
   provisioner "local-exec" {
     command = "${path.module}/scripts/create-yaml.sh '${local.name}' '${local.yaml_dir}'"
 
@@ -104,7 +100,7 @@ resource gitops_module masapp_operator {
 
 # Deploy Instance
 resource gitops_module masapp {
-  depends_on = [gitops_module.masapp_operator]
+  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals]
 
   name        = local.name
   namespace   = local.namespace

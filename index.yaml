@@ -1,0 +1,8 @@
+name: gitops-mas-kafka
+type: gitops
+description: Module to populate a gitops repo with the resources to provision mas-kafka
+tags:
+  - tools
+  - gitops
+versions: []
+id: github.com/cloud-native-toolkit/terraform-gitops-mas-kafka

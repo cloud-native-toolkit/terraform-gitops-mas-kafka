@@ -69,7 +69,7 @@ spec:
 
     storage:
       type: persistent-claim
-      class: "{{ kafka_storage_class }}"
+      class: {{ .Values.kafka.storageclass | quote }}
       size: 10Gi
       deleteClaim: true
   # -------------------------------------------------------

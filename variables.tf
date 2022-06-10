@@ -139,3 +139,9 @@ variable "configdir" {
   description = "configdir for Kafka"
   default     = "~/masconfig"
 }
+
+variable "storageclass" {
+  type        = string
+  description = "block storage to use for deployment"
+  default     = ""
+}

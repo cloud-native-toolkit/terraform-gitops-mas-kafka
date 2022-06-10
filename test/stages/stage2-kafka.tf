@@ -8,6 +8,7 @@ module "gitops_module" {
   kubeseal_cert = module.gitops.sealed_secrets_cert
 
   instanceid = "masdemo"
+  storageclass = "ibmc-vpc-block-10iops-tier"
 
 
 }

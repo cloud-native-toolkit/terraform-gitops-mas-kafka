@@ -23,6 +23,7 @@ locals {
           username = var.user_name
           namespace = local.namespace
           size = var.kafka_size
+          storageclass = var.storageclass
         }
         masapp = {
           instanceid = var.instanceid

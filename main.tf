@@ -51,7 +51,7 @@ module setup_clis {
 
 # Add values for operator chart
 resource "null_resource" "deployAppValsOperator" {
-  count = deploy_op ? 1 : 0
+  count = var.deploy_op ? 1 : 0
 
   provisioner "local-exec" {
     command = "${path.module}/scripts/create-yaml.sh '${local.operator_name}' '${local.operator_yaml_dir}'"
@@ -79,7 +79,7 @@ resource "null_resource" "deployAppVals" {
 # Deploy Operator
 resource gitops_module masapp_operator {
   depends_on = [null_resource.deployAppValsOperator]
-  count = deploy_op ? 1 : 0
+  count = var.deploy_op ? 1 : 0
 
   name        = local.operator_name
   namespace   = local.namespace

@@ -145,3 +145,9 @@ variable "storageclass" {
   description = "block storage to use for deployment"
   default     = ""
 }
+
+variable "deploy_op" {
+  type        = boolean
+  description = "true to deploy kafka operator and config for mas, false configs and existing amq streams operator"
+  default     = false
+}

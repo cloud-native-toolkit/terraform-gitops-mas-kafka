@@ -147,7 +147,7 @@ variable "storageclass" {
 }
 
 variable "deploy_op" {
-  type        = boolean
+  type        = bool
   description = "true to deploy kafka operator and config for mas, false configs and existing amq streams operator"
   default     = false
 }

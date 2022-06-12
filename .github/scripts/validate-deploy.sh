@@ -48,10 +48,14 @@ validate_gitops_content "${NAMESPACE}" "${LAYER}" "${SERVER_NAME}" "${TYPE}" "${
 
 check_k8s_namespace "${NAMESPACE}"
 
-#check_k8s_resource "${NAMESPACE}" "deployment" "${COMPONENT_NAME}"
+# Operator check
+check_k8s_resource "${NAMESPACE}" "deployment" "strimzi-cluster-operator-v0.22.1"
+
+# cluster deploy check
+check_k8s_resource "${NAMESPACE}" "deployment" "maskafka-entity-operator"
 
 #pause - for initial deploy during dev - remove this upon completion
-sleep 15m
+sleep 20m
 
 cd ..
 rm -rf .testrepo

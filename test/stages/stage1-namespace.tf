@@ -3,7 +3,8 @@ module "gitops_namespace" {
 
   gitops_config = module.gitops.gitops_config
   git_credentials = module.gitops.git_credentials
-  name = "amq-streams"
+  //name = "amq-streams"
+  name = "maskafka"
 }
 
 resource null_resource write_namespace {

@@ -17,13 +17,13 @@ cp -R "${CHART_DIR}"/* "${DEST_DIR}"
 
 
 # first test if kafka server has finished deploying, if yes continue or timeout
-export KAFKASTATUS=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
+export KAFKASTATUS=$(oc get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
 
 count=0
 until [[ "${KAFKASTATUS}" = "Ready" ]] || [[ $count -eq 20 ]]; do
   echo "Waiting for ${CLUSTERID} in ${NAMESPACE}"
   count=$((count + 1))
-  export KAFKASTATUS=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
+  export KAFKASTATUS=$(oc get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
   sleep 60
 done
 
@@ -33,8 +33,8 @@ if [[ $count -eq 20 ]]; then
   exit 1
 fi
 
-host=$(kubectl get kafkas ${CLUSTERID} -o jsonpath='{.status.listeners[0].addresses[0].host}' -n ${NAMESPACE})
-cert=$(kubectl get kafkas ${CLUSTERID} -o jsonpath='{.status.listeners[0].certificates[0]}' -n ${NAMESPACE})
+host=$(oc get kafkas ${CLUSTERID} -o jsonpath='{.status.listeners[0].addresses[0].host}' -n ${NAMESPACE})
+cert=$(oc get kafkas ${CLUSTERID} -o jsonpath='{.status.listeners[0].certificates[0]}' -n ${NAMESPACE})
 
 # adds the kafka bootstrap host and cert used for mas config creation
 cat >> ${DEST_DIR}/values.yaml << EOL

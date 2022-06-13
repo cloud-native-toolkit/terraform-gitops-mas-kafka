@@ -87,6 +87,10 @@ resource "null_resource" "deployAppValsConfig" {
 
   provisioner "local-exec" {
     command = "${path.module}/scripts/create-configyaml.sh '${local.name}' '${local.yaml_dir}' '${local.core-namespace}' '${var.cluster_name}' "
+     
+     environment = {
+      BIN_DIR = module.setup_clis.bin_dir
+    }
   }
 }
 

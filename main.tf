@@ -157,7 +157,7 @@ resource gitops_module masapp_operator {
 
 # Deploy Instance and config
 resource gitops_module masapp {
-  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals, module.seal_secrets_cfg, module.deployAppValsConfig]
+  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals, module.seal_secrets_cfg, null_resource.deployAppValsConfig]
 
   name        = local.name
   namespace   = local.namespace

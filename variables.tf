@@ -132,6 +132,13 @@ variable "user_name" {
   default     = "masuser"
 }
 
+variable "user_password" {
+  type        = string
+  sensitive   = true
+  description = "password for the kafkauser, if not defined it will generate a random password"
+  default     = ""
+}
+
 variable "instanceid" {
   type        = string
   description = "instance name for MAS - for example: masdemo or mas8 "
@@ -149,3 +156,9 @@ variable "storageclass" {
   default     = ""
 }
 
+variable "userpass" {
+  type        = string
+  sensitive   = true
+  description = "password for the kafkauser, if not defined it will generate a random password"
+  default     = ""
+}

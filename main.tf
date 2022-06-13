@@ -3,14 +3,17 @@ locals {
   operator_name  = "ibm-masapp-kafka-operator"
   bin_dir        = module.setup_clis.bin_dir
   tmp_dir        = "${path.cwd}/.tmp/${local.name}"
+  secret_dir     = "${local.tmp_dir}/secrets"
   yaml_dir       = "${local.tmp_dir}/chart/${local.name}"
   operator_yaml_dir = "${local.tmp_dir}/chart/${local.operator_name}"
+
 
   layer              = "services"
   type               = "instances"
   operator_type      = "operators"
   application_branch = "main"
   core-namespace     = "mas-${var.instanceid}-core"
+  user_password      = var.user_password != null && var.user_password != "" ? var.user_password : random_password.user_password.result
   namespace          = var.namespace
   appname            = var.appname
   layer_config       = var.gitops_config[local.layer]
@@ -48,10 +51,14 @@ module setup_clis {
   source = "github.com/cloud-native-toolkit/terraform-util-clis.git"
 }
 
+resource random_password user_password {
+  length           = 12
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
 
 # Add values for operator chart
 resource "null_resource" "deployAppValsOperator" {
- // count = var.deploy_op ? 1 : 0
 
   provisioner "local-exec" {
     command = "${path.module}/scripts/create-yaml.sh '${local.operator_name}' '${local.operator_yaml_dir}'"
@@ -75,11 +82,34 @@ resource "null_resource" "deployAppVals" {
   }
 }
 
+resource null_resource create_secret {
+  provisioner "local-exec" {
+    command = "${path.module}/scripts/create-secret.sh '${var.namespace}' '${local.secret_dir}'"
+
+    environment = {
+      BIN_DIR = module.setup_clis.bin_dir
+      KAFKA_USER = var.user_name
+      KAFKA_PASSWORD = local.user_password
+    }
+
+  }
+}
+
+module seal_secrets {
+  depends_on = [null_resource.create_secret]
+
+  source = "github.com/cloud-native-toolkit/terraform-util-seal-secrets.git?ref=v1.1.0"
+
+  source_dir    = local.secret_dir
+  dest_dir      = "${local.operator_yaml_dir}/templates"
+  kubeseal_cert = var.kubeseal_cert
+  label         = local.name
+}
+
 
 # Deploy Operator
 resource gitops_module masapp_operator {
-  depends_on = [null_resource.deployAppValsOperator]
-  //count = var.deploy_op ? 1 : 0
+  depends_on = [null_resource.deployAppValsOperator, module.seal_secrets]
 
   name        = local.operator_name
   namespace   = local.namespace

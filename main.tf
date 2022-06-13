@@ -3,8 +3,10 @@ locals {
   operator_name  = "ibm-masapp-kafka-operator"
   bin_dir        = module.setup_clis.bin_dir
   tmp_dir        = "${path.cwd}/.tmp/${local.name}"
-  secret_dir     = "${local.tmp_dir}/secrets"
+  usersecret_dir = "${local.tmp_dir}/usersecrets"
+  cfgsecret_dir  = "${local.tmp_dir}/configsecrets"
   yaml_dir       = "${local.tmp_dir}/chart/${local.name}"
+  mascfg_yaml_dir   = "${local.tmp_dir}/chart/ibm-mas-kafka-cfg"
   operator_yaml_dir = "${local.tmp_dir}/chart/${local.operator_name}"
 
 
@@ -82,9 +84,10 @@ resource "null_resource" "deployAppVals" {
   }
 }
 
+# create kafka user credentials
 resource null_resource create_secret {
   provisioner "local-exec" {
-    command = "${path.module}/scripts/create-secret.sh '${var.namespace}' '${local.secret_dir}'"
+    command = "${path.module}/scripts/create-usersecret.sh '${var.namespace}' '${local.usersecret_dir}'"
 
     environment = {
       BIN_DIR = module.setup_clis.bin_dir
@@ -100,8 +103,34 @@ module seal_secrets {
 
   source = "github.com/cloud-native-toolkit/terraform-util-seal-secrets.git?ref=v1.1.0"
 
-  source_dir    = local.secret_dir
+  source_dir    = local.usersecret_dir
   dest_dir      = "${local.operator_yaml_dir}/templates"
+  kubeseal_cert = var.kubeseal_cert
+  label         = local.name
+}
+
+
+# create mas credentials for kafka user
+resource null_resource create_cfgsecret {
+  provisioner "local-exec" {
+    command = "${path.module}/scripts/create-configsecret.sh '${local.core-namespace}' '${local.cfgsecret_dir}'"
+
+    environment = {
+      BIN_DIR = module.setup_clis.bin_dir
+      KAFKA_USER = var.user_name
+      KAFKA_PASS = local.user_password
+    }
+
+  }
+}
+
+module seal_secrets_cfg {
+  depends_on = [null_resource.create_cfgsecret]
+
+  source = "github.com/cloud-native-toolkit/terraform-util-seal-secrets.git?ref=v1.1.0"
+
+  source_dir    = local.cfgsecret_dir
+  dest_dir      = "${local.yaml_dir}/templates"
   kubeseal_cert = var.kubeseal_cert
   label         = local.name
 }
@@ -124,7 +153,7 @@ resource gitops_module masapp_operator {
 
 # Deploy Instance
 resource gitops_module masapp {
-  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals]
+  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals, module.seal_secrets_cfg]
 
   name        = local.name
   namespace   = local.namespace

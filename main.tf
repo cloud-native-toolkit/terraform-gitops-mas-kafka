@@ -83,7 +83,7 @@ resource "null_resource" "deployAppVals" {
 }
 
 # Add values for MAS - Kafka Config
-resource "null_resource" "deployAppVals" {
+resource "null_resource" "deployAppValsConfig" {
 
   provisioner "local-exec" {
     command = "${path.module}/scripts/create-configyaml.sh '${local.name}' '${local.yaml_dir}' '${local.core-namespace}' '${var.cluster_name}' "
@@ -157,7 +157,7 @@ resource gitops_module masapp_operator {
 
 # Deploy Instance and config
 resource gitops_module masapp {
-  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals, module.seal_secrets_cfg]
+  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals, module.seal_secrets_cfg, module.deployAppValsConfig]
 
   name        = local.name
   namespace   = local.namespace

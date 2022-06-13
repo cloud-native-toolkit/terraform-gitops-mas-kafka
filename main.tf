@@ -89,7 +89,7 @@ resource null_resource create_secret {
     environment = {
       BIN_DIR = module.setup_clis.bin_dir
       KAFKA_USER = var.user_name
-      KAFKA_PASSWORD = local.user_password
+      KAFKA_PASS = local.user_password
     }
 
   }

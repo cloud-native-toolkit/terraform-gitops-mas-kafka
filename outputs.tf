@@ -35,3 +35,8 @@ output "type" {
   depends_on  = [gitops_module.masapp]
 }
 
+output "clusterid" {
+  description = "The id of the kafka cluster name"
+  value       = var.cluster_name
+  depends_on  = [gitops_module.masapp]
+}

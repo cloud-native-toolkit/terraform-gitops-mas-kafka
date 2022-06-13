@@ -6,15 +6,14 @@ locals {
   usersecret_dir = "${local.tmp_dir}/usersecrets"
   cfgsecret_dir  = "${local.tmp_dir}/configsecrets"
   yaml_dir       = "${local.tmp_dir}/chart/${local.name}"
-  mascfg_yaml_dir   = "${local.tmp_dir}/chart/ibm-mas-kafka-cfg"
   operator_yaml_dir = "${local.tmp_dir}/chart/${local.operator_name}"
-
 
   layer              = "services"
   type               = "instances"
   operator_type      = "operators"
   application_branch = "main"
   core-namespace     = "mas-${var.instanceid}-core"
+  displayname        = "Kafka Strimzi - ${var.cluster_name}"
   user_password      = var.user_password != null && var.user_password != "" ? var.user_password : random_password.user_password.result
   namespace          = var.namespace
   appname            = var.appname
@@ -25,6 +24,7 @@ locals {
   values_content = {
         kafka = {
           name = var.cluster_name
+          displayname = local.displayname
           username = var.user_name
           namespace = local.namespace
           size = var.kafka_size
@@ -44,8 +44,6 @@ locals {
           sourceNamespace = var.catalog_namespace
         }
     }
-
-
 }
 
 
@@ -84,6 +82,14 @@ resource "null_resource" "deployAppVals" {
   }
 }
 
+# Add values for MAS - Kafka Config
+resource "null_resource" "deployAppVals" {
+
+  provisioner "local-exec" {
+    command = "${path.module}/scripts/create-configyaml.sh '${local.name}' '${local.yaml_dir}' '${local.core-namespace}' '${var.cluster_name}' "
+  }
+}
+
 # create kafka user credentials
 resource null_resource create_secret {
   provisioner "local-exec" {
@@ -108,7 +114,6 @@ module seal_secrets {
   kubeseal_cert = var.kubeseal_cert
   label         = local.name
 }
-
 
 # create mas credentials for kafka user
 resource null_resource create_cfgsecret {
@@ -135,7 +140,6 @@ module seal_secrets_cfg {
   label         = local.name
 }
 
-
 # Deploy Operator
 resource gitops_module masapp_operator {
   depends_on = [null_resource.deployAppValsOperator, module.seal_secrets]
@@ -151,7 +155,7 @@ resource gitops_module masapp_operator {
   credentials = yamlencode(var.git_credentials)
 }
 
-# Deploy Instance
+# Deploy Instance and config
 resource gitops_module masapp {
   depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals, module.seal_secrets_cfg]
 

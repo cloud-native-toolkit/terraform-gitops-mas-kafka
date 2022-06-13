@@ -33,6 +33,7 @@ BRANCH=$(jq -r '.branch // "main"' gitops-output.json)
 SERVER_NAME=$(jq -r '.server_name // "default"' gitops-output.json)
 LAYER=$(jq -r '.layer_dir // "2-services"' gitops-output.json)
 TYPE=$(jq -r '.type // "base"' gitops-output.json)
+CLUSTERID=$(jq -r '.clusterid // "maskafka"' gitops-output.json)
 
 mkdir -p .testrepo
 
@@ -54,8 +55,25 @@ check_k8s_resource "${NAMESPACE}" "deployment" "strimzi-cluster-operator-v0.22.1
 # cluster deploy check
 check_k8s_resource "${NAMESPACE}" "deployment" "maskafka-entity-operator"
 
+# check kafka cluster is in ready state
+export KAFKASTATUS=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
+
+count=0
+until [[ "${KAFKASTATUS}" = "Ready" ]] || [[ $count -eq 20 ]]; do
+  echo "Waiting for ${CLUSTERID} in ${NAMESPACE}"
+  count=$((count + 1))
+  export KAFKASTATUS=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
+  sleep 60
+done
+
+if [[ $count -eq 20 ]]; then
+  echo "Timed out waiting for ${CLUSTERID} top become ready in ${NAMESPACE}"
+  kubectl get all -n "${NAMESPACE}"
+  exit 1
+fi
+
 #pause - for initial deploy during dev - remove this upon completion
-sleep 20m
+sleep 10m
 
 cd ..
 rm -rf .testrepo

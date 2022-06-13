@@ -84,7 +84,6 @@ variable "server_name" {
 variable "channel" {
   type        = string
   description = "Subscription channel"
-  //default     = "amq-streams-1.8.x"
   default     = "strimzi-0.22.x"
 }
 
@@ -97,7 +96,6 @@ variable "installPlan" {
 variable "catalog" {
   type        = string
   description = "App catalog source"
- //default     = "redhat-operators"
   default     = "community-operators"
 }
 
@@ -116,7 +114,6 @@ variable "kafka_size" {
 variable "appname" {
   type        = string
   description = "Name of kafka to install"
-  //default     = "amq-streams"
   default     = "strimzi-kafka-operator"
 }
 

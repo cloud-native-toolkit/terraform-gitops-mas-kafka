@@ -24,6 +24,7 @@ locals {
   values_content = {
         kafka = {
           name = var.cluster_name
+          secretname = "maskafka-credentials"
           displayname = local.displayname
           username = var.user_name
           namespace = local.namespace
@@ -114,7 +115,7 @@ module seal_secrets {
   source = "github.com/cloud-native-toolkit/terraform-util-seal-secrets.git?ref=v1.1.0"
 
   source_dir    = local.usersecret_dir
-  dest_dir      = "${local.operator_yaml_dir}/templates"
+  dest_dir      = "${local.yaml_dir}/templates"
   kubeseal_cert = var.kubeseal_cert
   label         = local.name
 }
@@ -144,6 +145,28 @@ module seal_secrets_cfg {
   label         = local.name
 }
 
+
+### setup sa and job
+
+module "service_account" {
+  source = "github.com/cloud-native-toolkit/terraform-gitops-service-account"
+
+  gitops_config = var.gitops_config
+  git_credentials = var.git_credentials
+  namespace = var.namespace
+  name = "cfgjob-sa"
+  rbac_rules = [{
+    apiGroups = [""]
+    resources = ["configmaps","endpoints","events","persistentvolumeclaims","pods","secrets","serviceaccounts","services"]
+    verbs = ["*"]
+  }
+  ]
+  sccs = ["anyuid","privileged"]
+  server_name = var.server_name
+  rbac_cluster_scope = false
+}
+
+
 # Deploy Operator
 resource gitops_module masapp_operator {
   depends_on = [null_resource.deployAppValsOperator, module.seal_secrets]
@@ -161,7 +184,7 @@ resource gitops_module masapp_operator {
 
 # Deploy Instance and config
 resource gitops_module masapp {
-  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals, module.seal_secrets_cfg, null_resource.deployAppValsConfig]
+  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals, module.seal_secrets_cfg, null_resource.deployAppValsConfig, module.service_account]
 
   name        = local.name
   namespace   = local.namespace

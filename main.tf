@@ -142,7 +142,7 @@ module "service_account" {
   namespace = var.namespace
   name = "cfgjob-sa"
   rbac_rules = [{
-    apiGroups = [""]
+    apiGroups = ["kafka.strimzi.io"]
     resources = ["jobs","secrets","serviceaccounts","services","pods","kafkas","kafkacfgs"]
     verbs = ["*"]
   }]

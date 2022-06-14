@@ -142,11 +142,7 @@ module "service_account" {
   namespace = var.namespace
   name = "cfgjob-sa"
   rbac_rules = [{
-    apiGroups = ["kafka.strimzi.io"]
-    resources = ["jobs","secrets","serviceaccounts","services","pods","kafkas","kafkacfgs"]
-    verbs = ["*"]
-  },{
-    apiGroups = ["config.mas.ibm.com"]
+    apiGroups = ["kafka.strimzi.io","config.mas.ibm.com"]
     resources = ["jobs","secrets","serviceaccounts","services","pods","kafkas","kafkacfgs"]
     verbs = ["*"]
   }]
@@ -154,7 +150,6 @@ module "service_account" {
   server_name = var.server_name
   rbac_cluster_scope = false
 } 
-
 
 # Deploy Operator
 resource gitops_module masapp_operator {

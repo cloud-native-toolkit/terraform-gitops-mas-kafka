@@ -23,7 +23,7 @@ locals {
   values_content = {
         kafka = {
           name = var.cluster_name
-          secretname = "${var.user_name}-credentials"
+          secretname = "${var.cluster_name}-credentials"
           username = var.user_name
           namespace = local.namespace
           size = var.kafka_size

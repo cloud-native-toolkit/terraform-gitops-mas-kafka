@@ -40,3 +40,15 @@ output "clusterid" {
   value       = var.cluster_name
   depends_on  = [gitops_module.masapp]
 }
+
+output "corenamespace" {
+  description = "mascore namespace where kafka config is deployed"
+  value       = local.core-namespace
+  depends_on  = [gitops_module.masapp]
+}
+
+output "instanceid" {
+  description = "mas instance where kafka config is deployed"
+  value       = var.instanceid
+  depends_on  = [gitops_module.masapp]
+}

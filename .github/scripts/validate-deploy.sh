@@ -34,6 +34,9 @@ SERVER_NAME=$(jq -r '.server_name // "default"' gitops-output.json)
 LAYER=$(jq -r '.layer_dir // "2-services"' gitops-output.json)
 TYPE=$(jq -r '.type // "base"' gitops-output.json)
 CLUSTERID=$(jq -r '.clusterid // "maskafka"' gitops-output.json)
+INSTANCEID=$(jq -r '.instanceid // "masdemo"' gitops-output.json)
+CORENAMESPACE=$(jq -r '.corenamespace // "mas-masdemo-core"' gitops-output.json)
+
 
 mkdir -p .testrepo
 
@@ -47,6 +50,7 @@ set -e
 
 validate_gitops_content "${NAMESPACE}" "${LAYER}" "${SERVER_NAME}" "${TYPE}" "${COMPONENT_NAME}" "values.yaml"
 
+####### MOVE THIS BLOCK TO THE OPERATOR MODULE WHEN ITS READY
 check_k8s_namespace "${NAMESPACE}"
 
 # Operator check
@@ -56,24 +60,39 @@ check_k8s_resource "${NAMESPACE}" "deployment" "strimzi-cluster-operator-v0.22.1
 check_k8s_resource "${NAMESPACE}" "deployment" "maskafka-entity-operator"
 
 # check kafka cluster is in ready state
-export KAFKASTATUS=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
+kafkastatus=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
 
 count=0
-until [[ "${KAFKASTATUS}" = "Ready" ]] || [[ $count -eq 20 ]]; do
+until [[ "${kafkastatus}" = "Ready" ]] || [[ $count -eq 20 ]]; do
   echo "Waiting for ${CLUSTERID} in ${NAMESPACE}"
   count=$((count + 1))
-  export KAFKASTATUS=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
+  kafkastatus=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
   sleep 60
 done
 
 if [[ $count -eq 20 ]]; then
-  echo "Timed out waiting for ${CLUSTERID} top become ready in ${NAMESPACE}"
+  echo "Timed out waiting for ${CLUSTERID} to become ready in ${NAMESPACE}"
   kubectl get all -n "${NAMESPACE}"
   exit 1
 fi
+#####################
 
-#pause - for initial deploy during dev - remove this upon completion
-sleep 10m
+# check kafka config in mascore is in ready state
+cfgstatus=$(kubectl get kafkacfg ${INSTANCEID}-kafka-system -n ${CORENAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
+
+count=0
+until [[ "${cfgstatus}" = "Ready" ]] || [[ $count -eq 20 ]]; do
+  echo "Waiting for ${INSTANCEID} in ${CORENAMESPACE}"
+  count=$((count + 1))
+  cfgstatus=$(kubectl get kafkacfg ${INSTANCEID}-kafka-system -n ${CORENAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
+  sleep 60
+done
+
+if [[ $count -eq 20 ]]; then
+  echo "Timed out waiting for ${INSTANCEID}-kafka-system to become ready in ${CORENAMESPACE}"
+  kubectl get all -n "${CORENAMESPACE}"
+  exit 1
+fi
 
 cd ..
 rm -rf .testrepo

@@ -141,12 +141,6 @@ variable "instanceid" {
   description = "instance name for MAS - for example: masdemo or mas8 "
 }
 
-variable "configdir" {
-  type        = string
-  description = "configdir for Kafka"
-  default     = "~/masconfig"
-}
-
 variable "storageclass" {
   type        = string
   description = "block storage to use for deployment"

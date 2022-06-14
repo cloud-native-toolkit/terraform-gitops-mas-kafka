@@ -83,6 +83,7 @@ resource "null_resource" "deployAppVals" {
   }
 }
 
+/*
 # Add values for MAS - Kafka Config
 resource "null_resource" "deployAppValsConfig" {
 
@@ -93,7 +94,7 @@ resource "null_resource" "deployAppValsConfig" {
       BIN_DIR = module.setup_clis.bin_dir
     }
   }
-}
+} */
 
 # create kafka user credentials
 resource null_resource create_secret {
@@ -184,7 +185,7 @@ resource gitops_module masapp_operator {
 
 # Deploy Instance and config
 resource gitops_module masapp {
-  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals, module.seal_secrets_cfg, null_resource.deployAppValsConfig, module.service_account]
+  depends_on = [gitops_module.masapp_operator, null_resource.deployAppVals, module.seal_secrets_cfg, module.service_account]
 
   name        = local.name
   namespace   = local.namespace

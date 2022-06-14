@@ -13,7 +13,6 @@ locals {
   operator_type      = "operators"
   application_branch = "main"
   core-namespace     = "mas-${var.instanceid}-core"
-  displayname        = "Kafka Strimzi - ${var.cluster_name}"
   user_password      = var.user_password != null && var.user_password != "" ? var.user_password : random_password.user_password.result
   namespace          = var.namespace
   appname            = var.appname
@@ -24,8 +23,7 @@ locals {
   values_content = {
         kafka = {
           name = var.cluster_name
-          secretname = "maskafka-credentials"
-          displayname = local.displayname
+          secretname = "${var.user_name}-credentials"
           username = var.user_name
           namespace = local.namespace
           size = var.kafka_size
@@ -82,19 +80,6 @@ resource "null_resource" "deployAppVals" {
     }
   }
 }
-
-/*
-# Add values for MAS - Kafka Config
-resource "null_resource" "deployAppValsConfig" {
-
-  provisioner "local-exec" {
-    command = "${path.module}/scripts/create-configyaml.sh '${local.name}' '${local.yaml_dir}' '${local.core-namespace}' '${var.cluster_name}' "
-     
-     environment = {
-      BIN_DIR = module.setup_clis.bin_dir
-    }
-  }
-} */
 
 # create kafka user credentials
 resource null_resource create_secret {
@@ -158,10 +143,9 @@ module "service_account" {
   name = "cfgjob-sa"
   rbac_rules = [{
     apiGroups = [""]
-    resources = ["configmaps","endpoints","events","persistentvolumeclaims","pods","secrets","serviceaccounts","services"]
+    resources = ["jobs","secrets","serviceaccounts","services","pods"]
     verbs = ["*"]
-  }
-  ]
+  }]
   sccs = ["anyuid","privileged"]
   server_name = var.server_name
   rbac_cluster_scope = false

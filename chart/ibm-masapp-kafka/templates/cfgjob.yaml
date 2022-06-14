@@ -13,59 +13,20 @@ spec:
     spec:
       containers:
         - image: registry.redhat.io/openshift4/ose-cli:v4.4
-          command:
-            - /bin/bash
-            - -c
-            - |
-              export HOME=/tmp/mascfg
-
-              echo "wait for kafka server to finish deploying, if yes continue or timeout"
-
-              kafkastatus=$(oc get kafkas {{ .Values.kafka.name }} -n {{ .Values.kafka.namespace }} --no-headers -o custom-columns=":status.conditions[0].type")
-              count=0
-              until [[  $kafkastatus = "Ready" ]] || [[ $count -eq 20 ]]; do
-                echo "Waiting for {{ .Values.kafka.name }} in {{ .Values.kafka.namespace }}"
-                count=$((count + 1))
-                sleep 60
-                kafkastatus=$(oc get kafkas {{ .Values.kafka.name }} -n {{ .Values.kafka.namespace }} --no-headers -o custom-columns=":status.conditions[0].type")
-              done
-
-              if [[ $count -eq 20 ]]; then
-                echo "Timed out waiting for {{ .Values.kafka.name }} top become ready in {{ .Values.kafka.namespace }}"
-                exit 1
-              fi
-
-              boothost=$(oc get kafkas {{ .Values.kafka.name }} -o jsonpath='{.status.listeners[0].addresses[0].host}' -n {{ .Values.kafka.namespace }})
-              bootcert=$(oc get kafkas {{ .Values.kafka.name }} -o jsonpath='{.status.listeners[0].certificates[0]}' -n {{ .Values.kafka.namespace }})
-
-              mkdir -p "/tmp"
-              cat > /tmp/cfgjob.yaml << EOL
-apiVersion: config.mas.ibm.com/v1
-kind: KafkaCfg
-metadata:
-  name: {{ .Values.masapp.instanceid }}-kafka-system
-  namespace: {{ .Values.masapp.core-namespace }}
-  labels:
-    mas.ibm.com/configScope: system
-    mas.ibm.com/instanceId: {{ .Values.masapp.instanceid }}
-spec:
-  displayName: "Kafka - {{ .Values.kafka.name }}"
-  config:
-    hosts:
-      - host: "$boothost"
-        port: 443
-    credentials:
-      secretName: {{ .Values.kafka.secretname }}
-    saslMechanism: SCRAM-SHA-512
-  certificates:
-    - alias: {{ .Values.kafka.name }}-ca
-      crt: |
-$(echo | awk -v ca_var="$bootcert" '{ printf ca_var; }' | sed 's/^/        /')  
-EOL
-oc apply -f /tmp/cfgjob.yaml -n {{ .Values.masapp.core-namespace }}
-
+          command: ["/bin/sh", "-c", {{ .Files.Get "scripts/job.sh" | quote }} ]
+          env:
+          - name: CORENAMESPACE
+            value: {{ .Values.masapp.core-namespace }}
+          - name: INSTANCEID
+            value: {{ .Values.masapp.instanceid }}
+          - name: CLUSTERID
+            value: {{ .Values.kafka.name }}
+          - name: NAMESPACE
+            value: {{ .Values.kafka.namespace }}
+          - name: SECRETNAME
+            value: {{ .Values.kafka.secretname }}
           imagePullPolicy: Always
-          name: installplan-approver
+          name: kafkaconfigjob
       dnsPolicy: ClusterFirst
       restartPolicy: OnFailure
       serviceAccount: cfgjob-sa

@@ -145,6 +145,10 @@ module "service_account" {
     apiGroups = ["kafka.strimzi.io"]
     resources = ["jobs","secrets","serviceaccounts","services","pods","kafkas","kafkacfgs"]
     verbs = ["*"]
+  },{
+    apiGroups = ["config.mas.ibm.com"]
+    resources = ["jobs","secrets","serviceaccounts","services","pods","kafkas","kafkacfgs"]
+    verbs = ["*"]
   }]
   sccs = ["anyuid","privileged"]
   server_name = var.server_name

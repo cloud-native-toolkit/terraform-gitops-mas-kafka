@@ -43,4 +43,4 @@ spec:
       crt: |
 $(echo | awk -v ca_var="$bootcert" '{ printf ca_var; }' | sed 's/^/        /')  
 EOL
-oc apply -f ./cfgjob.yaml -n ${NAMESPACE}
+oc apply -f ./cfgjob.yaml -n ${CORENAMESPACE}

@@ -59,6 +59,9 @@ check_k8s_resource "${NAMESPACE}" "deployment" "strimzi-cluster-operator-v0.22.1
 # cluster deploy check
 check_k8s_resource "${NAMESPACE}" "deployment" "maskafka-entity-operator"
 
+# wait for kafka server job to complete
+sleep 1m
+
 # check kafka cluster is in ready state
 kafkastatus=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
 
@@ -76,6 +79,9 @@ if [[ $count -eq 20 ]]; then
   exit 1
 fi
 #####################
+
+# wait for config job to complete
+sleep 5m
 
 # check kafka config in mascore is in ready state
 cfgstatus=$(kubectl get kafkacfg ${INSTANCEID}-kafka-system -n ${CORENAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")

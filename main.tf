@@ -143,13 +143,13 @@ module "service_account" {
   name = "cfgjob-sa"
   rbac_rules = [{
     apiGroups = [""]
-    resources = ["jobs","secrets","serviceaccounts","services","pods"]
+    resources = ["jobs","secrets","serviceaccounts","services","pods","kafkas","kafkacfgs"]
     verbs = ["*"]
   }]
   sccs = ["anyuid","privileged"]
   server_name = var.server_name
   rbac_cluster_scope = false
-}
+} 
 
 
 # Deploy Operator

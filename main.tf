@@ -149,14 +149,11 @@ module "service_account" {
     apiGroups = ["config.mas.ibm.com"]
     resources = ["jobs","secrets","serviceaccounts","services","pods","kafkas","kafkacfgs"]
     verbs = ["*"]
-  }
-  
-  
-  ]
+  }]
   sccs = ["anyuid","privileged"]
   server_name = var.server_name
-  rbac_cluster_scope = false
-} 
+  rbac_cluster_scope = true
+}
 
 # Deploy Operator
 resource gitops_module masapp_operator {

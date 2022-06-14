@@ -31,7 +31,7 @@ locals {
         }
         masapp = {
           instanceid = var.instanceid
-          core-namespace = local.core-namespace
+          corenamespace = local.core-namespace
         }
     }
   values_content_operator = {

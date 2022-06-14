@@ -16,7 +16,7 @@ spec:
           command: ["/bin/sh", "-c", {{ .Files.Get "scripts/job.sh" | quote }} ]
           env:
           - name: CORENAMESPACE
-            value: {{ .Values.masapp.core-namespace }}
+            value: {{ .Values.masapp.corenamespace }}
           - name: INSTANCEID
             value: {{ .Values.masapp.instanceid }}
           - name: CLUSTERID

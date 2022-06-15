@@ -49,8 +49,8 @@ set -e
 
 validate_gitops_content "${NAMESPACE}" "${LAYER}" "${SERVER_NAME}" "${TYPE}" "${COMPONENT_NAME}" "values.yaml"
 
-# wait for config job to complete
-sleep 2m
+# wait for strimzi to deploy
+sleep 15m
 
 # check kafka config in mascore is in ready state
 cfgstatus=$(kubectl get kafkacfg ${INSTANCEID}-kafka-system -n ${CORENAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")

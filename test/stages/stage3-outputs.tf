@@ -12,6 +12,8 @@ resource null_resource write_outputs {
         layer       = module.gitops_module.layer
         layer_dir   = module.gitops_module.layer == "infrastructure" ? "1-infrastructure" : (module.gitops_module.layer == "services" ? "2-services" : "3-applications")
         type        = module.gitops_module.type
+        instanceid  = module.gitops_module.instanceid
+        corenamespace = module.gitops_module.corenamespace
       })
     }
   }

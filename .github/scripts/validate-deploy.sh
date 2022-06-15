@@ -33,6 +33,9 @@ BRANCH=$(jq -r '.branch // "main"' gitops-output.json)
 SERVER_NAME=$(jq -r '.server_name // "default"' gitops-output.json)
 LAYER=$(jq -r '.layer_dir // "2-services"' gitops-output.json)
 TYPE=$(jq -r '.type // "base"' gitops-output.json)
+INSTANCEID=$(jq -r '.instanceid // "masdemo"' gitops-output.json)
+CORENAMESPACE=$(jq -r '.corenamespace // "mas-masdemo-core"' gitops-output.json)
+
 
 mkdir -p .testrepo
 
@@ -46,9 +49,25 @@ set -e
 
 validate_gitops_content "${NAMESPACE}" "${LAYER}" "${SERVER_NAME}" "${TYPE}" "${COMPONENT_NAME}" "values.yaml"
 
-check_k8s_namespace "${NAMESPACE}"
+# wait for strimzi to deploy
+sleep 15m
 
-#check_k8s_resource "${NAMESPACE}" "deployment" "${COMPONENT_NAME}"
+# check kafka config in mascore is in ready state
+cfgstatus=$(kubectl get kafkacfg ${INSTANCEID}-kafka-system -n ${CORENAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
+
+count=0
+until [[ "${cfgstatus}" = "Ready" ]] || [[ $count -eq 20 ]]; do
+  echo "Waiting for ${INSTANCEID} in ${CORENAMESPACE}"
+  count=$((count + 1))
+  cfgstatus=$(kubectl get kafkacfg ${INSTANCEID}-kafka-system -n ${CORENAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
+  sleep 60
+done
+
+if [[ $count -eq 20 ]]; then
+  echo "Timed out waiting for ${INSTANCEID}-kafka-system to become ready in ${CORENAMESPACE}"
+  kubectl get all -n "${CORENAMESPACE}"
+  exit 1
+fi
 
 cd ..
 rm -rf .testrepo

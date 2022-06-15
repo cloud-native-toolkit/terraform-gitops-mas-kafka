@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    mas.ibm.com/configScope: system
+    mas.ibm.com/instanceId: {{ .Values.masapp.instanceid | quote }}
+    {{- include "ibm-masapp-kafka.labels" . | nindent 4 }}    
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"   
+  name: kafkaconfig-job
+spec:
+  template:
+    spec:
+      containers:
+        - image: registry.redhat.io/openshift4/ose-cli:v4.4
+          command: ["/bin/sh", "-c", {{ .Files.Get "scripts/job.sh" | quote }} ]
+          env:
+          - name: CORENAMESPACE
+            value: {{ .Values.masapp.corenamespace }}
+          - name: INSTANCEID
+            value: {{ .Values.masapp.instanceid }}
+          - name: CLUSTERID
+            value: {{ .Values.kafka.name }}
+          - name: NAMESPACE
+            value: {{ .Values.kafka.namespace }}
+          - name: SECRETNAME
+            value: {{ .Values.kafka.secretname }}
+          imagePullPolicy: Always
+          name: kafkaconfigjob
+      dnsPolicy: ClusterFirst
+      restartPolicy: OnFailure
+      serviceAccount: cfgjob-sa
+      serviceAccountName: cfgjob-sa
+      terminationGracePeriodSeconds: 30

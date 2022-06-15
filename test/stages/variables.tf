@@ -59,7 +59,7 @@ variable "git_org" {
 }
 
 variable "git_repo" {
-  default = "git-module-test"
+  default = "git-mas-kafka"
 }
 
 variable "gitops_namespace" {
@@ -73,5 +73,3 @@ variable "kubeseal_namespace" {
   default = "sealed-secrets"
 }
 
-variable "cp_entitlement_key" {
-}

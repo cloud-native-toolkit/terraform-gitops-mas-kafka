@@ -1,22 +1,20 @@
 name: gitops-mas-kafka
 type: gitops
-description: Module to populate a gitops repo with the resources to provision mas-kafka
+description: Module to populate a gitops repo with the resources to configure mas-kafka
 tags:
-  - tools
   - gitops
 versions:
   - platforms:
-      - kubernetes
-      - ocp3
       - ocp4
     dependencies:
       - id: gitops
         refs:
           - source: github.com/cloud-native-toolkit/terraform-tools-gitops.git
             version: '>= 1.1.0'
-      - id: namespace
+      - id: kafka
+        optional: true
         refs:
-          - source: github.com/cloud-native-toolkit/terraform-gitops-namespace.git
+          - source: github.com/cloud-native-toolkit/terraform-gitops-kafka-strimzi.git
             version: '>= 1.0.0'
     variables:
       - name: gitops_config
@@ -33,8 +31,24 @@ versions:
           output: server_name
       - name: namespace
         moduleRef:
-          id: namespace
+          id: kafka
           output: name
+      - name: namespace
+        moduleRef:
+          id: kafka
+          output: namespace
+      - name: cluster_name
+        moduleRef:
+          id: kafka
+          output: clusterid
+      - name: user_name
+        moduleRef:
+          id: kafka
+          output: user_name
+      - name: user_password
+        moduleRef:
+          id: kafka
+          output: user_password                              
       - name: kubeseal_cert
         moduleRef:
           id: gitops

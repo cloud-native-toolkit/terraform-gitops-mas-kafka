@@ -1,22 +1,41 @@
 locals {
-  name          = "my-module"
-  bin_dir       = module.setup_clis.bin_dir
-  yaml_dir      = "${path.cwd}/.tmp/${local.name}/chart/${local.name}"
-  service_url   = "http://${local.name}.${var.namespace}"
-  values_content = {
-  }
-  layer = "services"
-  type  = "base"
+  name          = "ibm-masapp-kafka"
+  bin_dir        = module.setup_clis.bin_dir
+  tmp_dir        = "${path.cwd}/.tmp/${local.name}"
+  cfgsecret_dir  = "${local.tmp_dir}/configsecrets"
+  yaml_dir       = "${local.tmp_dir}/chart/${local.name}"
+
+  layer              = "services"
+  type               = "instances"
   application_branch = "main"
-  namespace = var.namespace
-  layer_config = var.gitops_config[local.layer]
+  core-namespace     = "mas-${var.instanceid}-core"
+  namespace          = var.namespace
+  layer_config       = var.gitops_config[local.layer]
+
+# set values content for subscription
+  values_content = {
+        kafka = {
+          name = var.cluster_name
+          secretname = "${var.cluster_name}-credentials"
+          username = var.user_name
+          namespace = local.namespace
+        }
+        masapp = {
+          instanceid = var.instanceid
+          corenamespace = local.core-namespace
+        }
+    }
+
 }
 
 module setup_clis {
   source = "github.com/cloud-native-toolkit/terraform-util-clis.git"
 }
 
-resource null_resource create_yaml {
+
+# Add values for instance charts
+resource "null_resource" "deployAppVals" {
+
   provisioner "local-exec" {
     command = "${path.module}/scripts/create-yaml.sh '${local.name}' '${local.yaml_dir}'"
 
@@ -26,37 +45,66 @@ resource null_resource create_yaml {
   }
 }
 
-resource null_resource setup_gitops {
-  depends_on = [null_resource.create_yaml]
-
-  triggers = {
-    name = local.name
-    namespace = var.namespace
-    yaml_dir = local.yaml_dir
-    server_name = var.server_name
-    layer = local.layer
-    type = local.type
-    git_credentials = yamlencode(var.git_credentials)
-    gitops_config   = yamlencode(var.gitops_config)
-    bin_dir = local.bin_dir
-  }
-
+# create mas credentials for kafka user
+resource null_resource create_cfgsecret {
   provisioner "local-exec" {
-    command = "${self.triggers.bin_dir}/igc gitops-module '${self.triggers.name}' -n '${self.triggers.namespace}' --contentDir '${self.triggers.yaml_dir}' --serverName '${self.triggers.server_name}' -l '${self.triggers.layer}' --type '${self.triggers.type}'"
+    command = "${path.module}/scripts/create-configsecret.sh '${local.core-namespace}' '${local.cfgsecret_dir}' '${var.cluster_name}'"
 
     environment = {
-      GIT_CREDENTIALS = nonsensitive(self.triggers.git_credentials)
-      GITOPS_CONFIG   = self.triggers.gitops_config
+      BIN_DIR = module.setup_clis.bin_dir
+      KAFKA_USER = var.user_name
+      KAFKA_PASS = var.user_password
     }
-  }
 
-  provisioner "local-exec" {
-    when = destroy
-    command = "${self.triggers.bin_dir}/igc gitops-module '${self.triggers.name}' -n '${self.triggers.namespace}' --delete --contentDir '${self.triggers.yaml_dir}' --serverName '${self.triggers.server_name}' -l '${self.triggers.layer}' --type '${self.triggers.type}'"
-
-    environment = {
-      GIT_CREDENTIALS = nonsensitive(self.triggers.git_credentials)
-      GITOPS_CONFIG   = self.triggers.gitops_config
-    }
   }
+}
+
+module seal_secrets_cfg {
+  depends_on = [null_resource.create_cfgsecret]
+
+  source = "github.com/cloud-native-toolkit/terraform-util-seal-secrets.git?ref=v1.1.0"
+
+  source_dir    = local.cfgsecret_dir
+  dest_dir      = "${local.yaml_dir}/templates"
+  kubeseal_cert = var.kubeseal_cert
+  label         = local.name
+}
+
+
+### setup sa and job
+
+module "service_account" {
+  source = "github.com/cloud-native-toolkit/terraform-gitops-service-account"
+
+  gitops_config = var.gitops_config
+  git_credentials = var.git_credentials
+  namespace = local.namespace
+  name = "cfgjob-sa"
+  rbac_rules = [{
+    apiGroups = ["kafka.strimzi.io"]
+    resources = ["jobs","secrets","serviceaccounts","services","pods","kafkas","kafkacfgs"]
+    verbs = ["*"]
+  },{
+    apiGroups = ["config.mas.ibm.com"]
+    resources = ["jobs","secrets","serviceaccounts","services","pods","kafkas","kafkacfgs"]
+    verbs = ["*"]
+  }]
+  sccs = ["anyuid","privileged"]
+  server_name = var.server_name
+  rbac_cluster_scope = true
+}
+
+# Deploy Instance and config
+resource gitops_module masapp {
+  depends_on = [null_resource.deployAppVals, module.seal_secrets_cfg, module.service_account]
+
+  name        = local.name
+  namespace   = local.namespace
+  content_dir = local.yaml_dir
+  server_name = var.server_name
+  layer       = local.layer
+  type        = local.type
+  branch      = local.application_branch
+  config      = yamlencode(var.gitops_config)
+  credentials = yamlencode(var.git_credentials)
 }

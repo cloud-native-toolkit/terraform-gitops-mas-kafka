@@ -66,6 +66,7 @@ variable "git_credentials" {
 variable "namespace" {
   type        = string
   description = "The namespace where the application should be deployed"
+  default     = "maskafka"
 }
 
 variable "kubeseal_cert" {
@@ -78,4 +79,28 @@ variable "server_name" {
   type        = string
   description = "The name of the server"
   default     = "default"
+}
+
+variable "cluster_name" {
+  type        = string
+  description = "Name of kafka cluster"
+  default     = "maskafka"
+}
+
+variable "user_name" {
+  type        = string
+  description = "Name of kafka user"
+  default     = "maskafka"
+}
+
+variable "user_password" {
+  type        = string
+  sensitive   = true
+  description = "password for the kafkauser, if not defined it will generate a random password"
+  default     = ""
+}
+
+variable "instanceid" {
+  type        = string
+  description = "instance name for MAS - for example: masdemo or mas8"
 }

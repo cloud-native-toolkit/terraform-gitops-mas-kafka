@@ -19,7 +19,6 @@ locals {
           secretname = "${var.cluster_name}-credentials"
           username = var.user_name
           namespace = local.namespace
-          size = var.kafka_size
           storageclass = var.storageclass
         }
         masapp = {

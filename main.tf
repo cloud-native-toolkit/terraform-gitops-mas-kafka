@@ -10,7 +10,6 @@ locals {
   application_branch = "main"
   core-namespace     = "mas-${var.instanceid}-core"
   namespace          = var.namespace
-  appname            = var.appname
   layer_config       = var.gitops_config[local.layer]
 
 # set values content for subscription

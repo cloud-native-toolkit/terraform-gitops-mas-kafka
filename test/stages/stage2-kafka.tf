@@ -1,5 +1,5 @@
 module "gitops_module" {
-  source = "github.com/cloud-native-toolkit/terraform-gitops-kafka-strimzi"
+  source = "./module"
 
   gitops_config = module.gitops.gitops_config
   git_credentials = module.gitops.git_credentials

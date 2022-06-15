@@ -33,7 +33,6 @@ BRANCH=$(jq -r '.branch // "main"' gitops-output.json)
 SERVER_NAME=$(jq -r '.server_name // "default"' gitops-output.json)
 LAYER=$(jq -r '.layer_dir // "2-services"' gitops-output.json)
 TYPE=$(jq -r '.type // "base"' gitops-output.json)
-CLUSTERID=$(jq -r '.clusterid // "maskafka"' gitops-output.json)
 INSTANCEID=$(jq -r '.instanceid // "masdemo"' gitops-output.json)
 CORENAMESPACE=$(jq -r '.corenamespace // "mas-masdemo-core"' gitops-output.json)
 
@@ -50,38 +49,8 @@ set -e
 
 validate_gitops_content "${NAMESPACE}" "${LAYER}" "${SERVER_NAME}" "${TYPE}" "${COMPONENT_NAME}" "values.yaml"
 
-####### MOVE THIS BLOCK TO THE OPERATOR MODULE WHEN ITS READY
-check_k8s_namespace "${NAMESPACE}"
-
-# Operator check
-check_k8s_resource "${NAMESPACE}" "deployment" "strimzi-cluster-operator-v0.22.1"
-
-# cluster deploy check
-check_k8s_resource "${NAMESPACE}" "deployment" "maskafka-entity-operator"
-
-# wait for kafka server job to complete
-sleep 1m
-
-# check kafka cluster is in ready state
-kafkastatus=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
-
-count=0
-until [[ "${kafkastatus}" = "Ready" ]] || [[ $count -eq 20 ]]; do
-  echo "Waiting for ${CLUSTERID} in ${NAMESPACE}"
-  count=$((count + 1))
-  kafkastatus=$(kubectl get kafkas ${CLUSTERID} -n ${NAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")
-  sleep 60
-done
-
-if [[ $count -eq 20 ]]; then
-  echo "Timed out waiting for ${CLUSTERID} to become ready in ${NAMESPACE}"
-  kubectl get all -n "${NAMESPACE}"
-  exit 1
-fi
-#####################
-
 # wait for config job to complete
-sleep 5m
+sleep 2m
 
 # check kafka config in mascore is in ready state
 cfgstatus=$(kubectl get kafkacfg ${INSTANCEID}-kafka-system -n ${CORENAMESPACE} --no-headers -o custom-columns=":status.conditions[0].type")

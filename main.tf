@@ -19,7 +19,6 @@ locals {
           secretname = "${var.cluster_name}-credentials"
           username = var.user_name
           namespace = local.namespace
-          storageclass = var.storageclass
         }
         masapp = {
           instanceid = var.instanceid
@@ -54,7 +53,7 @@ resource null_resource create_cfgsecret {
     environment = {
       BIN_DIR = module.setup_clis.bin_dir
       KAFKA_USER = var.user_name
-      KAFKA_PASS = local.user_password
+      KAFKA_PASS = var.user_password
     }
 
   }

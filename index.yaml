@@ -133,6 +133,155 @@ versions:
       - name: instanceid
         type: string
         description: 'instance name for MAS - for example: masdemo or mas8'
+    version: v1.1.0
+    outputs:
+      - name: name
+        description: The name of the module
+      - name: branch
+        description: The branch where the module config has been placed
+      - name: namespace
+        description: The namespace where the module will be deployed
+      - name: server_name
+        description: The server where the module will be deployed
+      - name: layer
+        description: The layer where the module is deployed
+      - name: type
+        description: The type of module where the module is deployed
+      - name: clusterid
+        description: The id of the kafka cluster name
+      - name: corenamespace
+        description: mascore namespace where kafka config is deployed
+      - name: instanceid
+        description: mas instance where kafka config is deployed
+  - platforms:
+      - ocp4
+    dependencies:
+      - id: gitops
+        refs:
+          - source: github.com/cloud-native-toolkit/terraform-tools-gitops.git
+            version: '>= 1.1.0'
+      - id: kafka
+        optional: true
+        refs:
+          - source: github.com/cloud-native-toolkit/terraform-gitops-kafka-strimzi.git
+            version: '>= 1.0.0'
+    variables:
+      - name: gitops_config
+        type: |-
+          object({
+              boostrap = object({
+                argocd-config = object({
+                  project = string
+                  repo = string
+                  url = string
+                  path = string
+                })
+              })
+              infrastructure = object({
+                argocd-config = object({
+                  project = string
+                  repo = string
+                  url = string
+                  path = string
+                })
+                payload = object({
+                  repo = string
+                  url = string
+                  path = string
+                })
+              })
+              services = object({
+                argocd-config = object({
+                  project = string
+                  repo = string
+                  url = string
+                  path = string
+                })
+                payload = object({
+                  repo = string
+                  url = string
+                  path = string
+                })
+              })
+              applications = object({
+                argocd-config = object({
+                  project = string
+                  repo = string
+                  url = string
+                  path = string
+                })
+                payload = object({
+                  repo = string
+                  url = string
+                  path = string
+                })
+              })
+            })
+        description: Config information regarding the gitops repo structure
+        moduleRef:
+          id: gitops
+          output: gitops_config
+      - name: git_credentials
+        type: |-
+          list(object({
+              repo = string
+              url = string
+              username = string
+              token = string
+            }))
+        description: The credentials for the gitops repo(s)
+        sensitive: true
+        moduleRef:
+          id: gitops
+          output: git_credentials
+      - name: namespace
+        type: string
+        description: The namespace where the application should be deployed
+        default: maskafka
+        moduleRef:
+          id: kafka
+          output: name
+      - name: kubeseal_cert
+        type: string
+        description: The certificate/public key used to encrypt the sealed secrets
+        default: ''
+        moduleRef:
+          id: gitops
+          output: sealed_secrets_cert
+      - name: server_name
+        type: string
+        description: The name of the server
+        default: default
+        moduleRef:
+          id: gitops
+          output: server_name
+      - name: cluster_name
+        type: string
+        description: Name of kafka cluster
+        default: maskafka
+        moduleRef:
+          id: kafka
+          output: clusterid
+      - name: user_name
+        type: string
+        description: Name of kafka user
+        default: maskafka
+        moduleRef:
+          id: kafka
+          output: user_name
+      - name: user_password
+        type: string
+        sensitive: true
+        description: >-
+          password for the kafkauser, if not defined it will generate a random
+          password
+        default: ''
+        moduleRef:
+          id: kafka
+          output: user_password
+      - name: instanceid
+        type: string
+        description: 'instance name for MAS - for example: masdemo or mas8'
     version: v1.0.0
     outputs:
       - name: name

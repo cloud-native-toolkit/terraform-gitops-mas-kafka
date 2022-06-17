@@ -41,6 +41,6 @@ spec:
   certificates:
     - alias: ${CLUSTERID}-ca
       crt: |
-$(echo | awk -v ca_var="$bootcert" '{ printf ca_var; }' | sed 's/^/        /')  
+$(echo | awk -v ca_var="$bootcert" '{ printf ca_var; }' | sed 's/^/        /')
 EOL
 oc apply -f ./cfgjob.yaml -n ${CORENAMESPACE}

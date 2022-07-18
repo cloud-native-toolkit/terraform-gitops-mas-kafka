@@ -32,10 +32,6 @@ versions:
       - name: namespace
         moduleRef:
           id: kafka
-          output: name
-      - name: namespace
-        moduleRef:
-          id: kafka
           output: namespace
       - name: cluster_name
         moduleRef:
